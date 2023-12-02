@@ -12,7 +12,12 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @Get('me')
-  me(@UserDecorator() user: User) {
+  async me(@UserDecorator() user: User) {
     return user;
+  }
+
+  @Get('balance')
+  async balance(@UserDecorator() user: User) {
+    return this.usersService.getUserBalance(user);
   }
 }

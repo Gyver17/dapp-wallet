@@ -1,11 +1,15 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
+import { BcEtherService } from 'src/bc-ether/bc-ether.service';
 import { hashString, compareHash } from 'src/common/utils/hash.util';
 import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly bcEtherService: BcEtherService,
+  ) {}
 
   async create(
     firstName: string,
@@ -16,6 +20,8 @@ export class UsersService {
   ) {
     const passwordHash = await hashString(password);
 
+    const { walletAddress, privateKey } = await this.bcEtherService.generateRandomWallet();
+
     return this.prisma.user.create({
       data: {
         firstName,
@@ -23,8 +29,8 @@ export class UsersService {
         username,
         email,
         password: passwordHash,
-        privateKey: '',
-        walletAddress: '',
+        privateKey,
+        walletAddress,
       },
     });
   }
@@ -54,5 +60,9 @@ export class UsersService {
 
   async validatePassword(user: User, password: string) {
     return await compareHash(password, user.password);
+  }
+
+  async getUserBalance(user: User) {
+    return await this.bcEtherService.getBalance(user.walletAddress);
   }
 }
