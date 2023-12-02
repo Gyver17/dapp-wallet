@@ -9,3 +9,67 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  // Primary Key
+  id String @id @default(cuid())
+
+  // Foreign Keys
+  roleId String @map("role_id")
+
+  // Metadata
+  firstName     String    @map("first_name") @db.VarChar(100)
+  lastName      String    @map("last_name") @db.VarChar(100)
+  userName      String    @unique @map("user_name") @db.VarChar(100)
+  email         String    @unique @db.VarChar(100)
+  password      String    @db.VarChar(100)
+  walletAddress String    @map("wallet_address") @db.VarChar(100)
+  privateKey    String    @map("private_key") @db.VarChar(100)
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  deletedAt     DateTime? @map("deleted_at")
+
+  // Table name
+  @@map("users")
+}
+
+model TokenContract {
+  // Primary Key
+  id String @id @default(cuid())
+
+  // Foreign Keys
+  userId String @map("user_id")
+
+  // Metadata
+  name      String    @db.VarChar(100)
+  symbol    String    @db.VarChar(100)
+  address   String    @db.VarChar(100)
+  decimals  Int       @db.Integer
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Table name
+  @@map("token_contracts")
+}
+
+model Transaction {
+  // Primary Key
+  id String @id @default(cuid())
+
+  // Foreign Keys
+  userId String @map("user_id")
+  tokenId String @map("token_id")
+
+  // Metadata
+  hash      String    @db.VarChar(100)
+  from      String    @db.VarChar(100)
+  to        String    @db.VarChar(100)
+  value     String    @db.VarChar(100)
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  // Table name
+  @@map("transactions")
+}
