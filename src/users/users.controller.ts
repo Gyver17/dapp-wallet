@@ -1,4 +1,4 @@
-import { Controller, Get, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, UseInterceptors, Post } from '@nestjs/common';
 import { UsersService } from './users.service';
 import { UserDecorator } from 'src/common/decorators/user.decorator';
 import { User } from '@prisma/client';
@@ -19,5 +19,10 @@ export class UsersController {
   @Get('balance')
   async balance(@UserDecorator() user: User) {
     return this.usersService.getUserBalance(user);
+  }
+
+  @Post('transfer')
+  async transfer(@UserDecorator() user: User) {
+    return this.usersService.deposit(user, 1);
   }
 }

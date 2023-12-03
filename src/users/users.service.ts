@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
-import { BcEtherService } from 'src/bc-ether/bc-ether.service';
-import { hashString, compareHash } from 'src/common/utils/hash.util';
-import { PrismaService } from 'src/database/prisma.service';
+import { BcEtherService } from '../bc-ether/bc-ether.service';
+import { ERC20Contract } from '../bc-ether/bc-ether.types';
+import { hashString, compareHash } from '../common/utils/hash.util';
+import { PrismaService } from '../database/prisma.service';
 
 @Injectable()
 export class UsersService {
@@ -64,5 +65,9 @@ export class UsersService {
 
   async getUserBalance(user: User) {
     return await this.bcEtherService.getBalance(user.walletAddress);
+  }
+
+  async deposit(user: User, amount: number) {
+    return await this.bcEtherService.transferFromMainWallet(user.walletAddress, amount);
   }
 }

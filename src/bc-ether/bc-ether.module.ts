@@ -5,8 +5,9 @@ import { BcEtherService } from './bc-ether.service';
 @Module({
   imports: [
     EthersModule.forRoot({
-      network: SEPOLIA_NETWORK,
+      // network: SEPOLIA_NETWORK,
       custom: 'http://127.0.0.1:7545',
+      useDefaultProvider: false,
     }),
   ],
   providers: [BcEtherService],
