@@ -1,7 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { User } from '@prisma/client';
 import { BcEtherService } from '../bc-ether/bc-ether.service';
-import { ERC20Contract } from '../bc-ether/bc-ether.types';
 import { hashString, compareHash } from '../common/utils/hash.util';
 import { PrismaService } from '../database/prisma.service';
 
@@ -21,7 +20,7 @@ export class UsersService {
   ) {
     const passwordHash = await hashString(password);
 
-    const { walletAddress, privateKey } = await this.bcEtherService.generateRandomWallet();
+    const { walletAddress } = await this.bcEtherService.generateRandomWallet();
 
     return this.prisma.user.create({
       data: {
@@ -30,7 +29,6 @@ export class UsersService {
         username,
         email,
         password: passwordHash,
-        privateKey,
         walletAddress,
       },
     });
@@ -64,10 +62,17 @@ export class UsersService {
   }
 
   async getUserBalance(user: User) {
+    // const contract = await this.bcEtherService.getBlockNumber();
+    // console.log(contract);
     return await this.bcEtherService.getBalance(user.walletAddress);
   }
 
   async deposit(user: User, amount: number) {
-    return await this.bcEtherService.transferFromMainWallet(user.walletAddress, amount);
+    // return await this.bcEtherService.transferFromMainWallet(user.walletAddress, amount);
+    // return await this.bcEtherService.transferToken(
+    //   '0x4D8283FE1c4F0276d5D331faD495c7B37188AA1D',
+    //   0.1,
+    //   user.privateKey,
+    // );
   }
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import {
   EthersContract,
   EthersSigner,
@@ -6,12 +6,11 @@ import {
   InjectEthersProvider,
   InjectSignerProvider,
 } from 'nestjs-ethers';
-import { EtherscanProvider, ethers,JsonRpcProvider } from 'ethers';
-import * as Tether from './abi/Tether.json';
-import * as TheGyverToken from './abi/TheGyverToker.json';
+import { ethers, AlchemyProvider } from 'ethers';
+import * as ERC20 from './abi/ERC20.json';
 import { ERC20Contract } from './bc-ether.types';
 import { ConfigService } from '@nestjs/config';
-
+import { TokenContract } from '@prisma/client';
 
 @Injectable()
 export class BcEtherService {
@@ -19,31 +18,22 @@ export class BcEtherService {
 
   constructor(
     @InjectEthersProvider()
-    private readonly customProvider: JsonRpcProvider,
+    private readonly customProvider: AlchemyProvider,
     @InjectSignerProvider()
     private readonly ethersSigner: EthersSigner,
     @InjectContractProvider()
     private readonly ethersContract: EthersContract,
     private readonly configService: ConfigService,
-  ) {
-    this.mainWalletAddress = '0xA359ae3889eCE7E42Ba4D475d5c01a1a562be601';
-  }
+  ) {}
 
   async getBlockNumber(): Promise<number> {
     return await this.customProvider.getBlockNumber();
   }
 
-  async getMainWallet() {
-    const privateKey = this.configService.get<string>('MAIN_WALLET_PRIVATE_KEY');
-    const wallet = this.ethersSigner.createWallet(privateKey);
-
-    return wallet;
-  }
-
   async generateRandomWallet() {
     const wallet = this.ethersSigner.createRandomWallet();
 
-    const privateKey = wallet.privateKey
+    const privateKey = wallet.privateKey;
     const walletAddress = await wallet.getAddress();
 
     return { privateKey, walletAddress };
@@ -55,74 +45,73 @@ export class BcEtherService {
     return ethers.formatEther(balance.toString());
   }
 
-  async getTetherContract(privateKey?: string) {
-    const contract = this.ethersContract.create(
-      this.mainWalletAddress,
-      Tether.abi,
-      privateKey ? this.ethersSigner.createWallet(privateKey) : undefined,
+  async getContract(contract: TokenContract) {
+    const contractInstance = this.ethersContract.create(
+      contract.address,
+      ERC20.abi,
     );
 
-
-    return contract;
+    return contractInstance;
   }
 
-  async getTheGyverTokenContract() {
-    const contract = this.ethersContract.create(
-      this.mainWalletAddress,
-      TheGyverToken.abi,
-    );
-
-    return contract;
-  }
-
-
-
-  async getERC20Contract(type: ERC20Contract) {
-    switch (type) {
-      case ERC20Contract.Tether:
-        return await this.getTetherContract();
-      case ERC20Contract.TheGyverToken:
-        return await this.getTheGyverTokenContract();
-      default:
-        throw new Error('Invalid ERC20 contract type');
-    }
-  }
-
-  async getTokenBalance(type: ERC20Contract, address: string) {
-    const contractInstance = await this.getERC20Contract(type);
+  async getTokenBalance(contract: TokenContract, address: string) {
+    const contractInstance = await this.getContract(contract);
 
     const balance = await contractInstance.balanceOf(address);
 
     return balance;
   }
 
-  async transferToken(type: ERC20Contract, address: string, amount: number, privateKey: string) {
+  async transferToken(address: string, amount: number, privateKey: string) {
     // const contractInstance = await this.getERC20Contract(type);
+    // const signer: any = await this.customProvider.ge;
+    const wallet = this.ethersSigner.createWallet(privateKey);
+
     const contractInstance = this.ethersContract.create(
-      this.mainWalletAddress,
-      type === ERC20Contract.Tether ? Tether.abi : TheGyverToken.abi
+      '0x36160274B0ED3673E67F2CA5923560a7a0c523aa',
+      ERC20.abi,
+      wallet,
     );
-    const signer = await this.customProvider.getSigner();
+
     const parsedAmount = ethers.parseEther(amount.toString());
 
-    const tx = await contractInstance.transfer(address, parsedAmount);
+    const balance = await contractInstance.balanceOf(wallet.address);
+    if (balance.lt(parsedAmount)) {
+      throw new BadRequestException('Insufficient funds');
+    }
 
-    return tx;
+    return contractInstance.transfer(address, parsedAmount);
+
+    // return tx;
   }
 
   async transfer(address: string, amount: number, privateKey: string) {
-    const signer = this.ethersSigner.createWallet(privateKey);
-  }
-
-  async transferFromMainWallet(address: string, amount: number) {
-    const signer = await this.customProvider.getSigner();
+    const fromWallet = this.ethersSigner.createWallet(privateKey);
+    const signer = await this.customProvider.getSigner(fromWallet.address);
     const parsedAmount = ethers.parseEther(amount.toString());
 
-    const tx = await signer.sendTransaction({
+    const nerwork = await this.customProvider.getNetwork();
+    const chainId = nerwork.chainId;
+    console.log('chainId', chainId);
+
+    return signer.sendTransaction({
       to: address,
       value: parsedAmount,
     });
+  }
 
-    return tx;
+  async transferFromMainWallet(address: string, amount: number) {
+    // const mainWallet = await this.getMainWallet();
+    // const signer = await this.customProvider.getSigner(mainWallet.address);
+    // const parsedAmount = ethers.parseEther(amount.toString());
+    // const balance = await mainWallet.getBalance();
+    // if (balance.lt(parsedAmount)) {
+    //   throw new BadRequestException('Insufficient funds');
+    // }
+    // const tx = await signer.sendTransaction({
+    //   to: address,
+    //   value: parsedAmount,
+    // });
+    // return tx;
   }
 }
