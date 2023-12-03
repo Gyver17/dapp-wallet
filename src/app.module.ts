@@ -5,6 +5,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { BcEtherModule } from './bc-ether/bc-ether.module';
 import { BalancesModule } from './balances/balances.module';
+import { TransfersModule } from './transfers/transfers.module';
+import { TokenContractsModule } from './token-contracts/token-contracts.module';
 
 @Module({
   imports: [
@@ -16,6 +18,8 @@ import { BalancesModule } from './balances/balances.module';
     UsersModule,
     BcEtherModule,
     BalancesModule,
+    TransfersModule,
+    TokenContractsModule,
   ],
 })
 export class AppModule {}
