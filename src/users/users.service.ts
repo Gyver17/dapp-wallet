@@ -60,19 +60,4 @@ export class UsersService {
   async validatePassword(user: User, password: string) {
     return await compareHash(password, user.password);
   }
-
-  async getUserBalance(user: User) {
-    // const contract = await this.bcEtherService.getBlockNumber();
-    // console.log(contract);
-    return await this.bcEtherService.getBalance(user.walletAddress);
-  }
-
-  async deposit(user: User, amount: number) {
-    // return await this.bcEtherService.transferFromMainWallet(user.walletAddress, amount);
-    // return await this.bcEtherService.transferToken(
-    //   '0x4D8283FE1c4F0276d5D331faD495c7B37188AA1D',
-    //   0.1,
-    //   user.privateKey,
-    // );
-  }
 }

@@ -11,12 +11,14 @@ import * as ERC20 from './abi/ERC20.json';
 import { ERC20Contract } from './bc-ether.types';
 import { ConfigService } from '@nestjs/config';
 import { TokenContract } from '@prisma/client';
+import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
 export class BcEtherService {
   private readonly mainWalletAddress: string;
 
   constructor(
+    private readonly prisma: PrismaService,
     @InjectEthersProvider()
     private readonly customProvider: AlchemyProvider,
     @InjectSignerProvider()
@@ -45,6 +47,27 @@ export class BcEtherService {
     return ethers.formatEther(balance.toString());
   }
 
+  async getTokenBalance(tokenId: string, address: string) {
+    const token = await this.prisma.tokenContract.findUnique({
+      where: {
+        id: tokenId,
+      },
+    });
+
+    if (!token) {
+      throw new BadRequestException('Token not found');
+    }
+
+    const contractInstance = this.ethersContract.create(
+      token.address,
+      ERC20.abi,
+    );
+
+    const balance = await contractInstance.balanceOf(address);
+
+    return ethers.formatEther(balance.toString());
+  }
+
   async getContract(contract: TokenContract) {
     const contractInstance = this.ethersContract.create(
       contract.address,
@@ -52,14 +75,6 @@ export class BcEtherService {
     );
 
     return contractInstance;
-  }
-
-  async getTokenBalance(contract: TokenContract, address: string) {
-    const contractInstance = await this.getContract(contract);
-
-    const balance = await contractInstance.balanceOf(address);
-
-    return balance;
   }
 
   async transferToken(address: string, amount: number, privateKey: string) {
