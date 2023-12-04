@@ -10,6 +10,7 @@ import { ethers, AlchemyProvider } from 'ethers';
 import * as ERC20 from './abi/ERC20.json';
 import { ConfigService } from '@nestjs/config';
 import { TokenContract } from '@prisma/client';
+import { BlockchainTransaction } from './bc-ether.type';
 
 @Injectable()
 export class BcEtherService {
@@ -63,13 +64,11 @@ export class BcEtherService {
   }
 
   async transferToken(
-    toAddress: string,
     token: TokenContract,
-    amount: number,
     fromPrivateKey: string,
+    toAddress: string,
+    amount: number,
   ) {
-    // const contractInstance = await this.getERC20Contract(type);
-    // const signer: any = await this.customProvider.ge;
     const wallet = this.ethersSigner.createWallet(fromPrivateKey);
 
     const contractInstance = this.ethersContract.create(
@@ -85,14 +84,18 @@ export class BcEtherService {
       throw new BadRequestException('Insufficient funds');
     }
 
-    return contractInstance.transfer(toAddress, parsedAmount);
-
-    // return tx;
+    return contractInstance.transfer(
+      toAddress,
+      parsedAmount,
+    ) as Promise<BlockchainTransaction>;
   }
 
-  async transfer(toAddress: string, amount: number, fromPrivateKey: string) {
+  async transferEther(
+    fromPrivateKey: string,
+    toAddress: string,
+    amount: number,
+  ) {
     const fromWallet = this.ethersSigner.createWallet(fromPrivateKey);
-    const signer = await this.customProvider.getSigner(fromWallet.address);
     const parsedAmount = ethers.parseEther(amount.toString());
 
     const balance = await fromWallet.getBalance();
@@ -100,7 +103,7 @@ export class BcEtherService {
       throw new BadRequestException('Insufficient funds');
     }
 
-    return signer.sendTransaction({
+    return fromWallet.sendTransaction({
       to: toAddress,
       value: parsedAmount,
     });
